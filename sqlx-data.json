@@ -1,0 +1,178 @@
+{
+  "db": "PostgreSQL",
+  "1c26f4fcebad49abd2bf96fc1a3634b280b799f769116c35f3c1d3831ec86256": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Varchar",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        insert into users (\n          name,\n          email,\n          password_hash,\n          verification_token\n        )\n        values ($1, $2, $3, $4)\n        on conflict do nothing;\n        "
+  },
+  "39639c412051dc7a93573ed2cbe841aacae94e11d0a687b0e2fcdc85bba1aad2": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n        update users\n        set refresh_token = $1\n        where id = $2;\n        "
+  },
+  "4b0762606bda1f88d5d40e1e4ce217007432b9943a03ac95771d55d33e56e7a1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "refresh_token",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        select id, refresh_token\n        from users\n        where email = $1;\n        "
+  },
+  "553c5637dffc5dd7376e2b11bf841486a7dacb550f5e229362c588189fddaa14": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "refresh_token",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        true,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        select id, password_hash, refresh_token\n        from users\n        where email = $1;\n        "
+  },
+  "68912c001a6d9eee01482692327e4db2cd8456e4f59993ea3cdcbb977b981e9a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "password_hash",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n        select password_hash\n        from users\n        where id = $1;\n        "
+  },
+  "7b214b09d94d5b5da4ea0b12a8ba66814ddc23004b22a2cb309547c7d7e28a1d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        select id\n        from users\n        where refresh_token = $1;\n        "
+  },
+  "aeedafda56b9c5f918cbbe6504c808c5f22c3ce375205b60b07790d19defe1e9": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        update users\n        set verified = true\n        where verification_token = $1;\n        "
+  },
+  "c55f854ac659b7f7a1d95e68625e3458f3d77e0454a12a8c81a0b19d0e78dd0d": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n        update users\n        set password_hash = $1\n        where id = $2;\n        "
+  },
+  "cd62f0dffcbf8d78032d9103cfcf95b864fb7f59b32760f4166bdf80404abc34": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Varchar",
+          "Bool",
+          "Varchar",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n        insert into users (\n          name, email, verified, picture_url, verification_token\n        )\n        values ($1, $2, $3, $4, $5)\n        on conflict do nothing\n        returning id;\n        "
+  }
+}
