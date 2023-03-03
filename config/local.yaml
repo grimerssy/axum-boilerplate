@@ -1,0 +1,40 @@
+host: [127, 0, 0, 1]
+port: 8080
+base_url: http://localhost:8080
+hmac_secret: >-
+  this should be a long one,
+  to generate new secure secret run
+  `openssl rand -base64 64`
+
+auth:
+  issuer:
+    Domain: localhost
+  audience:
+    Domain: localhost
+  access_token_ttl:
+    secs: 900 # 15 minutes
+    nanos: 0
+  refresh_token_ttl:
+    secs: 604800 # 7 days
+    nanos: 0
+
+database:
+  host: localhost
+  port: 6000
+  username: postgres
+  password: password
+  database: postgres
+  require_ssl: false
+
+email_client:
+  timeout:
+    secs: 1
+    nanos: 0
+  base_url: http://localhost:8000
+  sender: example@gmail.com
+  authorization_token: auth-token
+
+password_hasher:
+  m_cost: 4096
+  t_cost: 3
+  p_cost: 1

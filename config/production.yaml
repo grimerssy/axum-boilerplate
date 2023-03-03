@@ -1,0 +1,37 @@
+host: [0, 0, 0, 0]
+# port will be provided as an env variable
+base_url: https://your.domain
+# hmac_secret should not be public
+
+auth:
+  issuer:
+    Domain: localhost
+  audience:
+    Domain: localhost
+  access_token_ttl:
+    secs: 900 # 15 minutes
+    nanos: 0
+  refresh_token_ttl:
+    secs: 604800 # 7 days
+    nanos: 0
+
+database:
+  host: localhost
+  port: 6000
+  username: postgres
+  # password should not be public
+  database: postgres
+  require_ssl: true
+
+email_client:
+  timeout:
+    secs: 1
+    nanos: 0
+  base_url: https://api.postmarkapp.com
+  sender: example@gmail.com
+  # authorization_token should not be public
+
+password_hasher:
+  m_cost: 4096
+  t_cost: 3
+  p_cost: 1

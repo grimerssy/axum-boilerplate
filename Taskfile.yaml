@@ -1,0 +1,70 @@
+version: 3
+
+vars:
+  PROJECT_NAME: axum-boilerplate
+  POSTGRES_PORT: 6000
+
+env:
+  ENVIRONMENT: local
+
+dotenv: [.env]
+
+tasks:
+  init:
+    desc: Initializes the project after cloning the template
+    cmds:
+      - |-
+        cat .env.example >> .env
+        rm .env.example
+      # TODO: replace axum-boilerplate with PROJECT_NAME
+
+  run:
+    desc: Runs project in a local environment
+    cmds:
+      - cargo run {{.CLI_ARGS}}
+
+  dev:
+    desc: Runs project and email server in a local environment
+    cmds:
+      - cargo run {{.CLI_ARGS}}
+        & cargo run --bin email_server
+
+  test:
+    desc: Runs tests # and executes with much higher ulimit
+    aliases: [t]
+    cmds:
+      # - cargo test {{.CLI_ARGS}}
+      - cargo nextest run {{.CLI_ARGS}}
+
+  debug:
+    desc: Runs tests with logging enabled
+    env:
+      LOG_TESTS: true
+    cmds:
+      - cargo test {{.CLI_ARGS}}
+
+  up:
+    desc: Spins up the development database
+    cmds:
+      - docker run
+        -d
+        --name postgres_{{.POSTGRES_PORT}}
+        -e POSTGRES_PASSWORD="password"
+        -p {{.POSTGRES_PORT}}:5432
+        postgres
+        -N 1000
+
+  down:
+    desc: Deletes the development database
+    cmds:
+      - docker rm -f
+        postgres_{{.POSTGRES_PORT}}
+
+  db:
+    desc: Opens interactive shell for the development database
+    cmds:
+      - PGPASSWORD=password
+        psql
+        -U postgres
+        -h localhost
+        -p {{.POSTGRES_PORT}}

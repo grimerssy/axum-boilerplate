@@ -1,0 +1,3 @@
+crate::api::router! {
+    get,
+}
