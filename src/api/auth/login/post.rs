@@ -121,3 +121,66 @@ async fn save_refresh_token<'e, E: Executor<'e>>(
     .map(|_| ())
     .context("Failed to set user's refresh token")
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        test_helpers::{TestServer, TestUser},
+        Pool,
+    };
+    use axum::{
+        body::Body,
+        http::{header::CONTENT_TYPE, Request, StatusCode},
+    };
+
+    #[sqlx::test]
+    async fn fails_if_password_is_invalid(pool: Pool) {
+        let user = TestUser::new(&pool).await;
+        let mut server = TestServer::new(pool).await;
+        let mut invalid_password = user.password.clone();
+        invalid_password.push('\0');
+        assert_ne!(user.password, invalid_password);
+        let req = request(&user.email, &invalid_password);
+        let res = server.call(req).await;
+        assert!(res.status().is_client_error());
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[sqlx::test]
+    async fn suceeds_on_valid_credentials(pool: Pool) {
+        let user = TestUser::new(&pool).await;
+        let mut server = TestServer::new(pool).await;
+        let req = request(&user.email, &user.password);
+        let res = server.call(req).await;
+        assert!(res.status().is_success());
+    }
+
+    #[sqlx::test]
+    async fn sets_token_cookies(pool: Pool) {
+        let user = TestUser::new(&pool).await;
+        let mut server = TestServer::new(pool).await;
+        let req = request(&user.email, &user.password);
+        let res = server.call(req).await;
+        let set_cookie_header = res
+            .headers()
+            .get_all("Set-Cookie")
+            .iter()
+            .fold(String::new(), |mut acc, h| {
+                acc.push_str(h.to_str().unwrap());
+                acc
+            });
+        assert!(set_cookie_header.contains("access_token"));
+        assert!(set_cookie_header.contains("refresh_token"));
+    }
+
+    fn request(email: &str, password: &str) -> Request<Body> {
+        let body = (("email", email), ("password", password));
+        let body = serde_urlencoded::to_string(body).unwrap();
+        Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(Body::from(body))
+            .unwrap()
+    }
+}
