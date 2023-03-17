@@ -32,6 +32,7 @@ impl CookieService {
     pub fn set_access_token(&self, cookies: &Cookies, token: Secret<String>) {
         cookies.private(&self.key).add(
             Cookie::build(ACCESS_TOKEN_KEY, token.expose_secret().to_owned())
+                .path("/")
                 .max_age(self.access_token_ttl)
                 .http_only(true)
                 .secure(true)
