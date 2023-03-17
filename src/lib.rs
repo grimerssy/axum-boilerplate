@@ -1,9 +1,3 @@
-// TODO
-// apple auth
-// change pfp
-// docs
-// tests
-
 #[cfg(test)]
 mod test_helpers;
 

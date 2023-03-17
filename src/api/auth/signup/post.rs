@@ -175,7 +175,7 @@ mod tests {
     use crate::{
         test_helpers::{
             assert_client_error, extract_verification_link,
-            when_sending_an_email, TestServer,
+            when_sending_an_email, TestServer, TestUser,
         },
         Pool,
     };
@@ -188,7 +188,7 @@ mod tests {
             ("\0".repeat(50 + 1), "is too long"),
         ];
         for (name, reason) in tests {
-            let req = request(&name, &valid_email(), &valid_password());
+            let req = request(&name, &TestUser::email(), &TestUser::password());
             let res = server.call(req).await;
             assert_client_error(res.status(), &format!("name {reason}"))
         }
@@ -203,7 +203,7 @@ mod tests {
             ("not an email".into(), "is not a valid email"),
         ];
         for (email, reason) in tests {
-            let req = request(&valid_name(), &email, &valid_password());
+            let req = request(&TestUser::name(), &email, &TestUser::password());
             let res = server.call(req).await;
             assert_client_error(res.status(), &format!("email {reason}"))
         }
@@ -222,7 +222,7 @@ mod tests {
             ("ABCxyzABC".into(), "does not contain any digits"),
         ];
         for (password, reason) in tests {
-            let req = request(&valid_name(), &valid_email(), &password);
+            let req = request(&TestUser::name(), &TestUser::email(), &password);
             let res = server.call(req).await;
             assert_client_error(res.status(), &format!("password {reason}"))
         }
@@ -234,7 +234,7 @@ mod tests {
         let mock =
             when_sending_an_email().respond_with(ResponseTemplate::new(500));
         server.mount_mock(mock).await;
-        let res = server.call(valid_request()).await;
+        let res = TestUser::signup(&mut server).await;
         assert!(res.status().is_server_error());
         assert_eq!(count_users(&pool).await, 0);
     }
@@ -245,7 +245,7 @@ mod tests {
         let mock =
             when_sending_an_email().respond_with(ResponseTemplate::new(200));
         server.mount_mock(mock).await;
-        let res = server.call(valid_request()).await;
+        let res = TestUser::signup(&mut server).await;
         assert!(res.status().is_success());
         assert_eq!(count_users(&pool).await, 1);
     }
@@ -257,7 +257,7 @@ mod tests {
             .respond_with(ResponseTemplate::new(200))
             .expect(1);
         server.mount_mock(mock).await;
-        let res = server.call(valid_request()).await;
+        let res = TestUser::signup(&mut server).await;
         assert!(res.status().is_success());
         let email_requests = server.received_emails().await;
         let link = extract_verification_link(email_requests.first().unwrap());
@@ -283,9 +283,9 @@ mod tests {
             .respond_with(ResponseTemplate::new(200))
             .expect(1);
         server.mount_mock(mock).await;
-        let res = server.call(valid_request()).await;
+        let res = TestUser::signup(&mut server).await;
         assert!(res.status().is_success());
-        let res = server.call(valid_request()).await;
+        let res = TestUser::signup(&mut server).await;
         assert_eq!(res.status(), axum::http::StatusCode::CONFLICT);
         assert_eq!(count_users(&pool).await, 1);
     }
@@ -308,21 +308,5 @@ mod tests {
             .unwrap()
             .count
             .unwrap()
-    }
-
-    fn valid_name() -> String {
-        "Name Surname".into()
-    }
-
-    fn valid_email() -> String {
-        "email@domain.com".into()
-    }
-
-    fn valid_password() -> String {
-        "ABCxyz123".into()
-    }
-
-    fn valid_request() -> Request<Body> {
-        request(&valid_name(), &valid_email(), &valid_password())
     }
 }

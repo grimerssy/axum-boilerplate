@@ -1,27 +1,17 @@
 use std::str::FromStr;
 
-use argon2::{
-    password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher,
-    Version,
-};
 use axum::{
     body::Body,
-    http::{Request, StatusCode},
+    http::{header::CONTENT_TYPE, Request, StatusCode},
     response::Response,
     Router,
 };
-use fake::{
-    faker::{internet::en::SafeEmail, lorem::en::Sentence},
-    Fake,
-};
 use once_cell::sync::Lazy;
 use reqwest::Url;
-use secrecy::ExposeSecret;
 use tower::{Service, ServiceExt};
-use uuid::Uuid;
 use wiremock::{
     matchers::{method, path},
-    Mock, MockBuilder, MockServer,
+    Mock, MockBuilder, MockServer, ResponseTemplate,
 };
 
 use crate::{telemetry, Config, Pool, Server};
@@ -68,71 +58,57 @@ impl TestServer {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct TestUser {
-    pub id: i64,
-    pub name: String,
-    pub email: String,
-    pub picture_url: String,
-    pub password: String,
-    pub password_hash: String,
-    pub verification_token: Uuid,
-    pub verified: bool,
-    pub refresh_token: String,
-}
+pub struct TestUser;
 
 impl TestUser {
-    pub async fn new(pool: &Pool) -> Self {
-        let config = Config::new().unwrap();
-        let hmac_secret = config.server.hmac_secret.expose_secret();
-        let salt = SaltString::generate(&mut rand::thread_rng());
-        let password = String::new();
-        let password_hash = Argon2::new_with_secret(
-            hmac_secret.as_bytes(),
-            Algorithm::default(),
-            Version::default(),
-            Params::default(),
-        )
-        .unwrap()
-        .hash_password(password.as_bytes(), &salt)
-        .map(|ph| ph.to_string())
-        .unwrap();
-        sqlx::query!(
-            r#"
-            insert into users(
-              name,
-              email,
-              picture_url,
-              password_hash,
-              verification_token,
-              verified,
-              refresh_token
-            )
-            values ($1, $2, $3, $4, $5, $6, $7)
-            returning *;
-            "#,
-            Sentence(1..2).fake::<String>(),
-            SafeEmail().fake::<String>(),
-            Sentence(1..2).fake::<String>(),
-            password_hash,
-            Uuid::new_v4(),
-            true,
-            Sentence(1..2).fake::<String>(),
-        )
-        .fetch_one(pool)
-        .await
-        .map(|r| Self {
-            id: r.id,
-            name: r.name,
-            email: r.email.unwrap(),
-            picture_url: r.picture_url.unwrap(),
-            password,
-            password_hash: r.password_hash.unwrap(),
-            verification_token: r.verification_token,
-            verified: r.verified,
-            refresh_token: r.refresh_token.unwrap(),
-        })
-        .unwrap()
+    pub fn name() -> String {
+        "Name Surname".into()
+    }
+
+    pub fn email() -> String {
+        "email@domain.com".into()
+    }
+
+    pub fn password() -> String {
+        "ABCxyz123".into()
+    }
+
+    pub async fn signup(server: &mut TestServer) -> Response {
+        let mock =
+            when_sending_an_email().respond_with(ResponseTemplate::new(200));
+        server.mount_mock(mock).await;
+        let body = (
+            ("name", Self::name()),
+            ("email", Self::email()),
+            ("password", Self::password()),
+        );
+        let body = serde_urlencoded::to_string(body).unwrap();
+        let req = Request::builder()
+            .method("POST")
+            .uri("/auth/signup")
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(Body::from(body))
+            .unwrap();
+        server.call(req).await
+    }
+
+    pub async fn login(server: &mut TestServer) -> Response {
+        let body = (("email", Self::email()), ("password", Self::password()));
+        let body = serde_urlencoded::to_string(body).unwrap();
+        let req = Request::builder()
+            .method("POST")
+            .uri("/auth/login")
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(Body::from(body))
+            .unwrap();
+        server.call(req).await
+    }
+
+    pub async fn enter_session(server: &mut TestServer) {
+        let res = Self::signup(server).await;
+        assert!(res.status().is_success());
+        let res = Self::login(server).await;
+        assert!(res.status().is_success());
     }
 }
 
