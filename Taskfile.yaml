@@ -16,7 +16,12 @@ tasks:
       - |-
         cat .env.example >> .env
         rm .env.example
-      # TODO: replace axum-boilerplate with PROJECT_NAME
+        find . \
+        -type f \
+        -not -path './target/*' \
+        -not -path './.git/*' \
+        -not -path './Taskfile.yaml' \
+        -exec sed -i '' 's/axum-boilerplate/{{.PROJECT_NAME}}/g' {} \;
 
   run:
     desc: Runs project in a local environment
