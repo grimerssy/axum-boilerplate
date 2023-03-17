@@ -38,8 +38,8 @@ tasks:
     desc: Runs tests # and executes with much higher ulimit
     aliases: [t]
     cmds:
-      # - cargo test {{.CLI_ARGS}}
-      - cargo nextest run {{.CLI_ARGS}}
+      - cargo test {{.CLI_ARGS}}
+      # - cargo nextest run {{.CLI_ARGS}}
 
   debug:
     desc: Runs tests with logging enabled
